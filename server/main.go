@@ -1,12 +1,14 @@
 package main
 
 import (
-	"context"
-
 	"github.com/johnnhooyo/private-chat/engine"
+	"github.com/johnnhooyo/private-chat/pkg/chat"
+	"github.com/panjf2000/gnet/v2"
 )
 
 func main() {
-	server := &engine.Server{}
-	server.Start(context.Background())
+	server := engine.NewServer()
+	server.Start(chat.Background())
+
+	gnet.Run(NewImServer(), "tcp://:8088")
 }
