@@ -1,0 +1,98 @@
+package main
+
+import (
+	"github.com/johnnhooyo/private-chat/pkg/log"
+	"github.com/panjf2000/gnet/v2"
+	"time"
+)
+
+func NewImServer() *ImServer {
+	return &ImServer{
+		BuiltinEventEngine: BuiltinEventEngine{},
+		eng:                gnet.Engine{},
+		connMap:            make(map[int]gnet.Conn),
+		packer:             newDefaultPacker(),
+		dispatcher:         NewDefaultDispatcher(),
+	}
+}
+
+type ImServer struct {
+	BuiltinEventEngine
+	eng        gnet.Engine
+	connMap    map[int]gnet.Conn
+	packer     Packer
+	dispatcher Dispatcher
+}
+
+func (i *ImServer) OnBoot(eng gnet.Engine) (action gnet.Action) {
+	i.eng = eng
+	return
+}
+
+func (i *ImServer) OnOpen(c gnet.Conn) (out []byte, action gnet.Action) {
+	i.connMap[c.Fd()] = c
+	log.Debugf("new connection opened from %s, local addr:%s", c.RemoteAddr(), c.LocalAddr())
+	return
+}
+
+func (i *ImServer) OnClose(c gnet.Conn, err error) (action gnet.Action) {
+	if _, ok := i.connMap[c.Fd()]; ok {
+		delete(i.connMap, c.Fd())
+	}
+	log.Debugf("connection closed now <%s> err is %+v", c.RemoteAddr(), err)
+	return
+}
+
+// 从conn中读取数据 并进行处理
+func (i *ImServer) OnTraffic(c gnet.Conn) (action gnet.Action) {
+	dataPack, err := i.packer.Unpack(c)
+	if err != nil {
+		return
+	}
+	i.dispatcher.Dispatch(dataPack)
+	return
+}
+
+func (i *ImServer) OnTick() (delay time.Duration, action gnet.Action) {
+	//TODO implement me
+	panic("implement me")
+}
+
+// BuiltinEventEngine is a built-in implementation of EventHandler which sets up each method with a default implementation,
+// you can compose it with your own implementation of EventHandler when you don't want to implement all methods
+// in EventHandler.
+type BuiltinEventEngine struct{}
+
+// OnBoot fires when the engine is ready for accepting connections.
+// The parameter engine has information and various utilities.
+func (*BuiltinEventEngine) OnBoot(_ gnet.Engine) (action gnet.Action) {
+	return
+}
+
+// OnShutdown fires when the engine is being shut down, it is called right after
+// all event-loops and connections are closed.
+func (*BuiltinEventEngine) OnShutdown(_ gnet.Engine) {
+}
+
+// OnOpen fires when a new connection has been opened.
+// The parameter out is the return value which is going to be sent back to the peer.
+func (*BuiltinEventEngine) OnOpen(_ gnet.Conn) (out []byte, action gnet.Action) {
+	return
+}
+
+// OnClose fires when a connection has been closed.
+// The parameter err is the last known connection error.
+func (*BuiltinEventEngine) OnClose(_ gnet.Conn, _ error) (action gnet.Action) {
+	return
+}
+
+// OnTraffic fires when a local socket receives data from the peer.
+func (*BuiltinEventEngine) OnTraffic(_ gnet.Conn) (action gnet.Action) {
+	return
+}
+
+// OnTick fires immediately after the engine starts and will fire again
+// following the duration specified by the delay return value.
+func (*BuiltinEventEngine) OnTick() (delay time.Duration, action gnet.Action) {
+	return
+}
