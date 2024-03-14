@@ -27,7 +27,7 @@ func (m *Message) SendMsg() {
 
 }
 
-type LoginResp struct {
+type LogResp struct {
 	Logged bool   `json:"logged,omitempty"`
 	ErrMsg string `json:"err_msg,omitempty"`
 }

@@ -52,6 +52,13 @@ func (i *ImServer) OnClose(c gnet.Conn, err error) (action gnet.Action) {
 
 // OnTraffic 从conn中读取数据 并进行处理
 func (i *ImServer) OnTraffic(c gnet.Conn) (action gnet.Action) {
+	defer func() {
+		if err := recover(); err != nil {
+			// 处理 panic 错误，例如打印错误信息或进行日志记录等操作
+			fmt.Println("Recovered from panic:", err)
+		}
+	}()
+
 	dataPack, err := i.packer.Unpack(c)
 	if err != nil {
 		log.Errorf("onTraffic unpack message is error: %s", err.Error())
@@ -76,7 +83,31 @@ func (i *ImServer) OnTraffic(c gnet.Conn) (action gnet.Action) {
 		}
 		return nil
 	})
-	i.dispatcher.Dispatch(chat.Background(), dataPack)
+	// 添加广播 通知除了自己的其他在线用户
+	ctx.BindBroadcastFunc(func(data any) error {
+		if bytes, err := common.InUseCodec.Marshal(data); err != nil {
+			return err
+		} else {
+			if packageData, err := i.packer.Pack(bytes); err != nil {
+				return err
+			} else {
+				for _, conn := range i.connMap {
+					if conn.Fd() == c.Fd() {
+						continue
+					}
+					n, err := conn.Write(packageData)
+					if err != nil {
+						return err
+					}
+					if n != len(packageData) {
+						return fmt.Errorf("data not send enough, send len %d", n)
+					}
+				}
+			}
+		}
+		return nil
+	})
+	i.dispatcher.Dispatch(ctx, dataPack)
 	return
 }
 
