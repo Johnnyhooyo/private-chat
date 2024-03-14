@@ -1,4 +1,4 @@
-package main
+package common
 
 import "encoding/json"
 
@@ -6,6 +6,8 @@ type Codec interface {
 	Marshal(v any) ([]byte, error)
 	Unmarshal(data []byte, v any) error
 }
+
+var InUseCodec Codec = &jsonCodec{}
 
 type jsonCodec struct {
 }

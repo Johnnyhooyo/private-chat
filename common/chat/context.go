@@ -9,16 +9,55 @@ import (
 // Background 初始化一个空的Context
 func Background() *Context {
 	return &Context{
-		mu: sync.RWMutex{},
+		mu:  sync.RWMutex{},
+		rmu: sync.Mutex{},
 	}
 }
 
 // Context 串联空间
 type Context struct {
-	// This mutex protects Keys map.
+	// This mutex protects Keys map and done chan.
 	mu sync.RWMutex
 	// Keys is a key/value pair exclusively for the context of each request.
 	Keys map[string]any
+
+	// This mutex protects Conn write with goroutine-safe.
+	rmu sync.Mutex
+	//// Conn to reply msg or push msg.
+	//Conn gnet.Conn
+	write func(data any) error
+
+	// for cancel
+	done chan struct{}
+	err  error
+}
+
+// Cancel cancel context
+func (c *Context) Cancel(err error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.done == nil {
+		c.done = make(chan struct{})
+		c.err = err
+		close(c.done)
+	}
+}
+
+//// BindConn bind a gnet.Conn to this context.
+//func (c *Context) BindConn(conn gnet.Conn) {
+//	c.Conn = conn
+//}
+
+// BindWriteFunc 数据写回到通道
+func (c *Context) BindWriteFunc(f func(data any) error) {
+	c.write = f
+}
+
+// Write 数据写回到通道
+func (c *Context) Write(data interface{}) error {
+	c.rmu.Lock()
+	defer c.rmu.Unlock()
+	return c.write(data)
 }
 
 // Set is used to store a new key/value pair exclusively for this context.
@@ -85,7 +124,7 @@ func (c *Context) Deadline() (deadline time.Time, ok bool) {
 // See https://blog.golang.org/pipelines for more examples of how to use
 // a Done channel for cancellation.
 func (c *Context) Done() <-chan struct{} {
-	panic("not implemented") // TODO: Implement
+	return c.done
 }
 
 // If Done is not yet closed, Err returns nil.
