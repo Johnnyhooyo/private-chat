@@ -18,7 +18,6 @@ type Client struct {
 	loginVersion int64 // 登陆的事件戳 如果不匹配就抛弃消息
 
 	request map[route.Type]chan bool // 已经发送请求 等待结果
-
 }
 
 func NewClient() *Client {
@@ -33,14 +32,24 @@ func (c *Client) HandleMsg(msg *common.Message) error {
 	case route.Chat:
 		msg.ReceiveMsg()
 	case route.LogIn:
-		if resp, ok := msg.Body.(common.LoginResp); ok {
+		if resp, ok := msg.Body.(common.LogResp); ok {
 			if resp.Logged {
 				c.logged = true
 				c.request[route.LogIn] <- true
 			}
 		}
 	case route.LogOut:
-
+		// 已经下线 不用处理
+	case route.UserList:
+		if resp, ok := msg.Body.([]common.UserInfo); ok {
+			fmt.Println("当前在线的用户有：")
+			for i, userInfo := range resp {
+				fmt.Printf("%d: %s\n", i, userInfo.Name)
+			}
+			fmt.Println("-------------------")
+		}
+	case route.Broadcast:
+		fmt.Printf("用户 %s 上线了\n", msg.From.Name)
 	}
 	return nil
 }
@@ -106,7 +115,7 @@ func (c *Client) cmd(ctx *chat.Context, msg string) {
 func (c *Client) Request(routeStr route.Type, message any) error {
 	routeBytes := []byte(routeStr)
 	var msg []byte
-	binary.BigEndian.AppendUint32(msg, uint32(len(routeBytes)))
+	msg = binary.BigEndian.AppendUint32(msg, uint32(len(routeBytes)))
 	msg = append(msg, routeBytes...)
 	userInfoBytes, err := common.InUseCodec.Marshal(message)
 	if err != nil {

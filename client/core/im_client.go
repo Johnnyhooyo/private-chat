@@ -2,9 +2,12 @@ package core
 
 import (
 	"encoding/binary"
+	"errors"
 	"github.com/johnnhooyo/private-chat/client/log"
 	"github.com/johnnhooyo/private-chat/common"
 	"github.com/johnnhooyo/private-chat/common/chat"
+	"github.com/johnnhooyo/private-chat/common/route"
+	"io"
 	"net"
 )
 
@@ -56,13 +59,16 @@ func (i *ImClient) ReadLoop(ctx *chat.Context) {
 		}
 		bytes, err := i.packer.Unpack(i.c)
 		if err != nil {
+			if errors.Is(err, io.EOF) {
+				return
+			}
 			log.Errorf("failed read data from server error:%s", err.Error())
 			continue
 		}
 		routeSize := binary.BigEndian.Uint32(bytes[:4])
-		route := string(bytes[4 : 4+routeSize])
+		routeStr := string(bytes[4 : 4+routeSize])
 
-		msg := &common.Message{Route: route}
+		msg := &common.Message{Route: route.Type(routeStr)}
 		err = common.InUseCodec.Unmarshal(bytes[4+routeSize:], msg)
 		if err != nil {
 			log.Errorf("failed convert data to common.Message, err is %s", err.Error())

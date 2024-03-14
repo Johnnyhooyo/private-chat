@@ -4,18 +4,13 @@ go 1.20
 
 require (
 	github.com/johnnhooyo/private-chat/common v0.0.0
-)
-replace (
-	github.com/johnnhooyo/private-chat/common => ../common
+	go.uber.org/zap v1.27.0
+	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 )
 
+replace github.com/johnnhooyo/private-chat/common => ../common
+
 require (
-	github.com/panjf2000/gnet/v2 v2.3.5 // indirect
-	github.com/valyala/bytebufferpool v1.0.0 // indirect
-	go.uber.org/atomic v1.11.0 // indirect
+	github.com/stretchr/testify v1.8.4 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	go.uber.org/zap v1.27.0 // indirect
-	golang.org/x/sync v0.6.0 // indirect
-	golang.org/x/sys v0.18.0 // indirect
-	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 )

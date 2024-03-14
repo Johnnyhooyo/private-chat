@@ -21,11 +21,14 @@ type Context struct {
 	// Keys is a key/value pair exclusively for the context of each request.
 	Keys map[string]any
 
-	// This mutex protects Conn write with goroutine-safe.
+	// This mutex protects Conn write and broadcast with goroutine-safe.
 	rmu sync.Mutex
 	//// Conn to reply msg or push msg.
 	//Conn gnet.Conn
 	write func(data any) error
+
+	// broadcast some system message.
+	broadcast func(data any) error
 
 	// for cancel
 	done chan struct{}
@@ -58,6 +61,17 @@ func (c *Context) Write(data interface{}) error {
 	c.rmu.Lock()
 	defer c.rmu.Unlock()
 	return c.write(data)
+}
+
+// BindBroadcastFunc 绑定广播通道
+func (c *Context) BindBroadcastFunc(f func(data any) error) {
+	c.broadcast = f
+}
+
+func (c *Context) Broadcast(data any) error {
+	c.rmu.Lock()
+	defer c.rmu.Unlock()
+	return c.broadcast(data)
 }
 
 // Set is used to store a new key/value pair exclusively for this context.

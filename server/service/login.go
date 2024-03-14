@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/johnnhooyo/private-chat/common"
 	"github.com/johnnhooyo/private-chat/common/chat"
+	"github.com/johnnhooyo/private-chat/common/route"
 	"github.com/johnnhooyo/private-chat/core"
 	"github.com/johnnhooyo/private-chat/pkg/log"
 )
@@ -17,7 +18,7 @@ type LoginHandler struct {
 
 func (l *LoginHandler) Handle(ctx *chat.Context, req any) error {
 	info, ok := req.(*common.UserInfo)
-	resp := &common.LoginResp{Logged: true}
+	resp := &common.LogResp{Logged: true}
 	var err error
 	if !ok {
 		log.Errorf("error revice login event ,req can't read")
@@ -33,9 +34,18 @@ func (l *LoginHandler) Handle(ctx *chat.Context, req any) error {
 		resp.Logged = false
 		resp.ErrMsg = err.Error()
 	}
-	if err := ctx.Write(common.Message{Route: "login", Body: resp}); err != nil {
+	if err := ctx.Write(common.Message{Route: route.LogIn, Body: resp}); err != nil {
 		log.Errorf("err send resp in login handler. %s", err.Error())
 		return nil
+	}
+	err = ctx.Broadcast(common.Message{
+		Route: route.Broadcast,
+		From:  info,
+		Body:  resp,
+	})
+	if err != nil {
+		log.Errorf("err send broadcast in login handler. %s", err.Error())
+		return err
 	}
 	return nil
 }
