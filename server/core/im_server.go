@@ -1,6 +1,9 @@
-package main
+package core
 
 import (
+	"fmt"
+	"github.com/johnnhooyo/private-chat/common"
+	"github.com/johnnhooyo/private-chat/common/chat"
 	"github.com/johnnhooyo/private-chat/pkg/log"
 	"github.com/panjf2000/gnet/v2"
 	"time"
@@ -11,7 +14,7 @@ func NewImServer() *ImServer {
 		BuiltinEventEngine: BuiltinEventEngine{},
 		eng:                gnet.Engine{},
 		connMap:            make(map[int]gnet.Conn),
-		packer:             newDefaultPacker(),
+		packer:             common.NewDefaultPacker(),
 		dispatcher:         NewDefaultDispatcher(),
 	}
 }
@@ -20,8 +23,12 @@ type ImServer struct {
 	BuiltinEventEngine
 	eng        gnet.Engine
 	connMap    map[int]gnet.Conn
-	packer     Packer
+	packer     common.Packer
 	dispatcher Dispatcher
+}
+
+func (i *ImServer) Register(path string, handler Handler) {
+	i.dispatcher.Register(path, handler)
 }
 
 func (i *ImServer) OnBoot(eng gnet.Engine) (action gnet.Action) {
@@ -43,13 +50,33 @@ func (i *ImServer) OnClose(c gnet.Conn, err error) (action gnet.Action) {
 	return
 }
 
-// 从conn中读取数据 并进行处理
+// OnTraffic 从conn中读取数据 并进行处理
 func (i *ImServer) OnTraffic(c gnet.Conn) (action gnet.Action) {
 	dataPack, err := i.packer.Unpack(c)
 	if err != nil {
+		log.Errorf("onTraffic unpack message is error: %s", err.Error())
 		return
 	}
-	i.dispatcher.Dispatch(dataPack)
+	ctx := chat.Background()
+	ctx.BindWriteFunc(func(data any) error {
+		if bytes, err := common.InUseCodec.Marshal(data); err != nil {
+			return err
+		} else {
+			if packageData, err := i.packer.Pack(bytes); err != nil {
+				return err
+			} else {
+				n, err := c.Write(packageData)
+				if err != nil {
+					return err
+				}
+				if n != len(packageData) {
+					return fmt.Errorf("data not send enough, send len %d", n)
+				}
+			}
+		}
+		return nil
+	})
+	i.dispatcher.Dispatch(chat.Background(), dataPack)
 	return
 }
 

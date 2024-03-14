@@ -1,10 +1,9 @@
 package engine
 
 import (
+	"github.com/johnnhooyo/private-chat/common/chat"
 	"log"
 	"net"
-
-	"github.com/johnnhooyo/private-chat/pkg/chat"
 )
 
 type listener struct {

@@ -1,14 +1,22 @@
 package main
 
 import (
-	"github.com/johnnhooyo/private-chat/engine"
-	"github.com/johnnhooyo/private-chat/pkg/chat"
+	"fmt"
+	"github.com/johnnhooyo/private-chat/core"
+	"github.com/johnnhooyo/private-chat/service"
 	"github.com/panjf2000/gnet/v2"
 )
 
 func main() {
-	server := engine.NewServer()
-	server.Start(chat.Background())
+	//server := engine.NewServer()
+	//server.Start(chat.Background())
+	server := core.NewImServer()
+	server.Register("login", service.NewLoginHandler())
+	server.Register("logout", service.NewLogoutHandler())
 
-	gnet.Run(NewImServer(), "tcp://:8088")
+	err := gnet.Run(server, "tcp://0.0.0.0:8002")
+	if err != nil {
+		fmt.Printf("start gnet error :%s", err.Error())
+		return
+	}
 }

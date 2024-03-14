@@ -1,9 +1,9 @@
 package engine
 
 import (
+	"github.com/johnnhooyo/private-chat/common/chat"
 	"net"
 
-	"github.com/johnnhooyo/private-chat/pkg/chat"
 	"github.com/johnnhooyo/private-chat/pkg/log"
 )
 

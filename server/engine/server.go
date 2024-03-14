@@ -1,7 +1,9 @@
 // Package engine 核心引擎，负责处理链接的处理和数据的处理
 package engine
 
-import "github.com/johnnhooyo/private-chat/pkg/chat"
+import (
+	"github.com/johnnhooyo/private-chat/common/chat"
+)
 
 // NewServer new server
 func NewServer(opts ...Option) *Server {
