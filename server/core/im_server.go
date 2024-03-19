@@ -66,6 +66,7 @@ func (i *ImServer) OnTraffic(c gnet.Conn) (action gnet.Action) {
 	}
 	ctx := chat.Background()
 	ctx.BindWriteFunc(func(data any) error {
+		log.Debugf("send back to client %s data %+v", c.RemoteAddr(), data)
 		if bytes, err := common.InUseCodec.Marshal(data); err != nil {
 			return err
 		} else {

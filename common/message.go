@@ -31,3 +31,15 @@ type LogResp struct {
 	Logged bool   `json:"logged,omitempty"`
 	ErrMsg string `json:"err_msg,omitempty"`
 }
+
+var RespMap map[route.Type]any
+
+func init() {
+	RespMap = map[route.Type]any{
+		route.LogIn:    &LogResp{},
+		route.LogOut:   &LogResp{},
+		route.UserList: ss,
+	}
+}
+
+var ss []*UserInfo

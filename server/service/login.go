@@ -28,6 +28,7 @@ func (l *LoginHandler) Handle(ctx *chat.Context, req any) error {
 			err = fmt.Errorf("repeated name, please try new name")
 		} else {
 			getGround().userPool[info.Name] = info
+			log.Infof("user %s loggedin from ip:%s", info.Name, info.Ip)
 		}
 	}
 	if err != nil {

@@ -1,14 +1,14 @@
 package core
 
 import (
-	"encoding/binary"
 	"errors"
+	"fmt"
 	"github.com/johnnhooyo/private-chat/client/log"
 	"github.com/johnnhooyo/private-chat/common"
 	"github.com/johnnhooyo/private-chat/common/chat"
-	"github.com/johnnhooyo/private-chat/common/route"
 	"io"
 	"net"
+	"runtime/debug"
 )
 
 func NewImClient(addr string, client *Client) *ImClient {
@@ -48,6 +48,14 @@ func (i *ImClient) Start(_ *chat.Context) (err error) {
 }
 
 func (i *ImClient) ReadLoop(ctx *chat.Context) {
+	defer func() {
+		if err := recover(); err != nil {
+			// 处理 panic 错误，例如打印错误信息或进行日志记录等操作
+			fmt.Println("Recovered from panic:", err)
+			debug.PrintStack() // 打印出错时的调用栈信息
+			i.ReadLoop(ctx)
+		}
+	}()
 	for {
 		select {
 		case <-ctx.Done():
@@ -65,11 +73,10 @@ func (i *ImClient) ReadLoop(ctx *chat.Context) {
 			log.Errorf("failed read data from server error:%s", err.Error())
 			continue
 		}
-		routeSize := binary.BigEndian.Uint32(bytes[:4])
-		routeStr := string(bytes[4 : 4+routeSize])
 
-		msg := &common.Message{Route: route.Type(routeStr)}
-		err = common.InUseCodec.Unmarshal(bytes[4+routeSize:], msg)
+		msg := &common.Message{}
+		err = common.InUseCodec.Unmarshal(bytes, msg)
+		log.Debugf("receive msg %+v", msg)
 		if err != nil {
 			log.Errorf("failed convert data to common.Message, err is %s", err.Error())
 			continue

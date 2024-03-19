@@ -28,18 +28,23 @@ func (d *defaultDispatcher) Dispatch(ctx *chat.Context, data []byte) {
 	route := string(data[4 : 4+routeSize])
 	if handler, ok := d.router[route]; ok {
 		req := handler.GetReq()()
-		if err := common.InUseCodec.Unmarshal(data[4+routeSize:], req); err != nil {
-			log.Errorf("err binding req data to struct %s, err is %s", reflect.TypeOf(req), err.Error())
-			return
+		if req != nil {
+			if err := common.InUseCodec.Unmarshal(data[4+routeSize:], req); err != nil {
+				log.Errorf("err binding req data to struct %s, err is %s", reflect.TypeOf(req), err.Error())
+				return
+			}
 		}
+
 		err := handler.Handle(ctx, req)
 		if err != nil {
 			log.Errorf("handler err is %s", err.Error())
 			return
 		}
+	} else {
+		log.Warnf("unsupported route %s", route)
 	}
 }
 
-func (g *defaultDispatcher) Register(path string, handler Handler) {
-	g.router[path] = handler
+func (d *defaultDispatcher) Register(path string, handler Handler) {
+	d.router[path] = handler
 }

@@ -6,7 +6,7 @@ const (
 	LogIn     Type = "login"
 	LogOut    Type = "logout"
 	Chat      Type = "chat"
-	UserList  Type = "userList"
+	UserList  Type = "userlist"
 	Reject    Type = "reject"
 	Recover   Type = "recover"
 	Broadcast Type = "broadcast"
