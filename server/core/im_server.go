@@ -9,12 +9,12 @@ import (
 	"time"
 )
 
-func NewImServer() *ImServer {
+func NewImServer(key []byte) *ImServer {
 	return &ImServer{
 		BuiltinEventEngine: BuiltinEventEngine{},
 		eng:                gnet.Engine{},
 		connMap:            make(map[int]gnet.Conn),
-		packer:             common.NewDefaultPacker(),
+		packer:             common.NewDefaultPacker(key),
 		dispatcher:         NewDefaultDispatcher(),
 	}
 }
@@ -96,6 +96,7 @@ func (i *ImServer) OnTraffic(c gnet.Conn) (action gnet.Action) {
 					if conn.Fd() == c.Fd() {
 						continue
 					}
+
 					n, err := conn.Write(packageData)
 					if err != nil {
 						return err

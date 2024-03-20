@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/johnnhooyo/private-chat/common"
 	"github.com/johnnhooyo/private-chat/core"
 	"github.com/johnnhooyo/private-chat/service"
 	"github.com/panjf2000/gnet/v2"
@@ -10,7 +11,7 @@ import (
 func main() {
 	//server := engine.NewServer()
 	//server.Start(chat.Background())
-	server := core.NewImServer()
+	server := core.NewImServer(common.GenerateAESKey("ucanmodifythisword"))
 	server.Register("login", service.NewLoginHandler())
 	server.Register("logout", service.NewLogoutHandler())
 	server.Register("userlist", service.NewUserListHandler())
