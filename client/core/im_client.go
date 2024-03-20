@@ -14,7 +14,7 @@ import (
 func NewImClient(addr string, client *Client) *ImClient {
 	return &ImClient{
 		addr:   addr,
-		packer: common.NewDefaultPacker(),
+		packer: common.NewDefaultPacker(common.GenerateAESKey("ucanmodifythisword")),
 		client: client,
 	}
 }

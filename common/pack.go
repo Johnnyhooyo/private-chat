@@ -18,17 +18,21 @@ type Packer interface {
 }
 
 type DefaultPacker struct {
+	encrypt Encrypt
 }
 
-func NewDefaultPacker() *DefaultPacker {
-	return &DefaultPacker{}
+func NewDefaultPacker(key []byte) Packer {
+	return &DefaultPacker{
+		encrypt: NewAesEncryptor(key),
+	}
 }
 
 func (d *DefaultPacker) Pack(data []byte) ([]byte, error) {
-	dataSize := len(data)
+	cipher := d.encrypt.Encrypt(data)
+	dataSize := len(cipher)
 	buffer := make([]byte, 4+dataSize)
 	binary.LittleEndian.PutUint32(buffer[:4], uint32(dataSize)) // write dataSize
-	copy(buffer[4:], data)                                      // write data
+	copy(buffer[4:], cipher)                                    // write data
 	return buffer, nil
 }
 
@@ -44,7 +48,7 @@ func (d *DefaultPacker) Unpack(reader io.Reader) ([]byte, error) {
 		return nil, err
 	}
 
-	return data, nil
+	return d.encrypt.Decrypt(data), nil
 }
 
 // readData 处理tcp读取数据时的异常

@@ -1,6 +1,7 @@
 package core
 
 import (
+	"bufio"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -8,6 +9,7 @@ import (
 	"github.com/johnnhooyo/private-chat/common"
 	"github.com/johnnhooyo/private-chat/common/chat"
 	"github.com/johnnhooyo/private-chat/common/route"
+	"os"
 	"runtime/debug"
 	"strings"
 	"time"
@@ -109,7 +111,9 @@ func (c *Client) Run(ctx *chat.Context) {
 		}
 
 		var input string
-		_, _ = fmt.Scanln(&input)
+		reader := bufio.NewReader(os.Stdin)
+		input, _ = reader.ReadString('\n')
+		input = strings.TrimSpace(input)
 		c.cmd(ctx, input)
 	}
 }
