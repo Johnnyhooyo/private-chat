@@ -15,7 +15,7 @@ type UserListHandler struct {
 }
 
 // Handle 返回用户列表 暂时没有排除自己
-func (l *UserListHandler) Handle(ctx *chat.Context, req any) error {
+func (l *UserListHandler) Handle(ctx *chat.Context, _ any) error {
 	var userList []*common.UserInfo
 	for _, info := range getGround().userPool {
 		userList = append(userList, info)

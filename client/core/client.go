@@ -220,8 +220,9 @@ func (c *Client) GetUserList() {
 	c.waitResp(route.UserList)
 }
 
-func (c *Client) SendMsg(msg, user string) {
+func (c *Client) SendMsg(user, msg string) {
 	body := &common.Message{
+		From: &common.UserInfo{Name: c.name},
 		To:   &common.UserInfo{Name: user},
 		Body: msg,
 	}
