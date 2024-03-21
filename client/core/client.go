@@ -10,6 +10,7 @@ import (
 	"github.com/johnnhooyo/private-chat/common/chat"
 	"github.com/johnnhooyo/private-chat/common/route"
 	"os"
+	"regexp"
 	"runtime/debug"
 	"strings"
 	"time"
@@ -122,15 +123,17 @@ func (c *Client) cmd(ctx *chat.Context, msg string) {
 	if len(msg) == 0 {
 		return
 	}
-	messages := strings.Split(msg, "_")
-	cmd := messages[0]
+	cmdEnd := strings.Index(msg, ":")
+	cmd := msg
 	var user string
 	var body string
-	if len(messages) > 1 {
-		content := strings.Split(messages[1], ":")
-		user = content[0]
-		if len(content) > 0 {
-			body = content[1]
+	if cmdEnd > 0 {
+		body = msg[cmdEnd+1:]
+		cmd = msg[:cmdEnd]
+		cmdSplit := strings.Index(cmd, "_")
+		if cmdSplit > 0 {
+			user = cmd[cmdSplit+1:]
+			cmd = cmd[:cmdSplit]
 		}
 	}
 	switch cmd {
@@ -230,6 +233,22 @@ func (c *Client) SendMsg(user, msg string) {
 		To:   &common.UserInfo{Name: user},
 		Body: msg,
 	}
+	r := regexp.MustCompile(`\[pic:(.*?)\]`)
+	paths := r.FindAllStringSubmatch(msg, -1)
+
+	if len(paths) > 0 {
+		files := make(map[string][]byte, len(paths))
+		body.AttachFile = files
+		for _, match := range paths {
+			bytes, err := os.ReadFile(match[1])
+			if err != nil {
+				log.Errorf("error read file %s, %s", match[1], err.Error())
+				continue
+			}
+			files[match[1]] = bytes
+		}
+	}
+
 	err := c.Request(route.Chat, body)
 	if err != nil {
 		fmt.Printf("发送失败,请重试")
