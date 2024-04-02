@@ -37,6 +37,6 @@ func main() {
 		}
 	}
 
-	fmt.Println("bye bye~")
+	fmt.Println("bye bye~~~")
 
 }
