@@ -41,9 +41,9 @@ func (c *Context) Cancel(err error) {
 	defer c.mu.Unlock()
 	if c.done == nil {
 		c.done = make(chan struct{})
-		c.err = err
-		close(c.done)
 	}
+	c.err = err
+	close(c.done)
 }
 
 //// BindConn bind a gnet.Conn to this context.

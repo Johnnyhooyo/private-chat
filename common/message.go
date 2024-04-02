@@ -57,3 +57,7 @@ func init() {
 }
 
 var ss []*UserInfo
+
+type StringMsg struct {
+	Data string
+}

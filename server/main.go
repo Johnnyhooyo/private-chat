@@ -16,8 +16,9 @@ func main() {
 	server.Register("logout", service.NewLogoutHandler())
 	server.Register("userlist", service.NewUserListHandler())
 	server.Register("chat", service.NewChatHandler())
+	server.Register("heartbeat", service.NewHeartbeatHandler())
 
-	err := gnet.Run(server, "tcp://0.0.0.0:8002")
+	err := gnet.Run(server, "tcp://0.0.0.0:8002", gnet.WithTicker(true))
 	if err != nil {
 		fmt.Printf("start gnet error :%s", err.Error())
 		return

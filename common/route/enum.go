@@ -10,4 +10,5 @@ const (
 	Reject    Type = "reject"
 	Recover   Type = "recover"
 	Broadcast Type = "broadcast"
+	Heartbeat Type = "heartbeat"
 )

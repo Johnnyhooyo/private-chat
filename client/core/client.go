@@ -13,12 +13,14 @@ import (
 	"regexp"
 	"runtime/debug"
 	"strings"
+	"syscall"
 	"time"
 )
 
 type Client struct {
 	name         string
 	logged       bool // 0-未登录 1-已登陆
+	connected    bool
 	chatBoxes    map[string]Handler
 	write        func(msg []byte) error
 	loginVersion int64 // 登陆的事件戳 如果不匹配就抛弃消息
@@ -31,6 +33,7 @@ func NewClient() *Client {
 		logged:    false,
 		chatBoxes: make(map[string]Handler),
 		request:   make(map[route.Type]chan bool),
+		connected: true,
 	}
 }
 
@@ -79,14 +82,18 @@ func (c *Client) HandleMsg(msg *common.Message) error {
 		} else {
 			log.Errorf("error resp type %+v", req)
 		}
-
+	case route.Heartbeat:
+		err := c.Request(route.Heartbeat, common.StringMsg{Data: "pong"})
+		if err != nil {
+			log.Errorf("heartbeat err:%s", err.Error())
+		}
 	case route.Broadcast:
 		fmt.Printf("用户 %s 上线了\n", msg.From.Name)
 	}
 	return nil
 }
 
-func (c *Client) Run(ctx *chat.Context) {
+func (c *Client) Run(ctx *chat.Context) (ct bool) {
 	defer func() {
 		if err := recover(); err != nil {
 			// 处理 panic 错误，例如打印错误信息或进行日志记录等操作
@@ -102,6 +109,11 @@ func (c *Client) Run(ctx *chat.Context) {
 			return
 		default:
 
+		}
+
+		if !c.connected {
+			fmt.Println("connection closed, exit now.")
+			return true
 		}
 
 		if !c.logged {
@@ -187,6 +199,7 @@ func (c *Client) Login() bool {
 	}
 	err := c.Request(route.LogIn, user)
 	if err != nil {
+		c.checkConn(err)
 		fmt.Printf("处理错误，请重试。")
 		return false
 	}
@@ -212,6 +225,7 @@ func (c *Client) Logout() {
 	}
 	err := c.Request(route.LogOut, user)
 	if err != nil {
+		c.checkConn(err)
 		fmt.Printf("处理错误，请重试。")
 		return
 	}
@@ -221,6 +235,7 @@ func (c *Client) Logout() {
 func (c *Client) GetUserList() {
 	err := c.Request(route.UserList, nil)
 	if err != nil {
+		c.checkConn(err)
 		fmt.Printf("处理错误，请重试。")
 		return
 	}
@@ -251,7 +266,15 @@ func (c *Client) SendMsg(user, msg string) {
 
 	err := c.Request(route.Chat, body)
 	if err != nil {
+		c.checkConn(err)
 		fmt.Printf("发送失败,请重试")
 		return
+	}
+}
+
+// 检查错误类型 看看是不是断开连接了
+func (c *Client) checkConn(err error) {
+	if errors.Is(err, syscall.EPIPE) {
+		c.connected = false
 	}
 }

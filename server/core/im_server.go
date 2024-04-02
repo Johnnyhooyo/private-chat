@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/johnnhooyo/private-chat/common"
 	"github.com/johnnhooyo/private-chat/common/chat"
+	"github.com/johnnhooyo/private-chat/common/route"
 	"github.com/johnnhooyo/private-chat/pkg/log"
 	"github.com/panjf2000/gnet/v2"
 	"time"
@@ -16,6 +17,7 @@ func NewImServer(key []byte) *ImServer {
 		connMap:            make(map[int]gnet.Conn),
 		packer:             common.NewDefaultPacker(key),
 		dispatcher:         NewDefaultDispatcher(),
+		hb:                 GetHeartbeat(),
 	}
 }
 
@@ -25,6 +27,7 @@ type ImServer struct {
 	connMap    map[int]gnet.Conn
 	packer     common.Packer
 	dispatcher Dispatcher
+	hb         *heartbeat
 }
 
 func (i *ImServer) Register(path string, handler Handler) {
@@ -65,25 +68,8 @@ func (i *ImServer) OnTraffic(c gnet.Conn) (action gnet.Action) {
 		return
 	}
 	ctx := chat.Background()
-	ctx.BindWriteFunc(func(data any) error {
-		log.Debugf("send back to client %s data %+v", c.RemoteAddr(), data)
-		if bytes, err := common.InUseCodec.Marshal(data); err != nil {
-			return err
-		} else {
-			if packageData, err := i.packer.Pack(bytes); err != nil {
-				return err
-			} else {
-				n, err := c.Write(packageData)
-				if err != nil {
-					return err
-				}
-				if n != len(packageData) {
-					return fmt.Errorf("data not send enough, send len %d", n)
-				}
-			}
-		}
-		return nil
-	})
+	ctx.Set(string(route.Heartbeat), c.Fd())
+	ctx.BindWriteFunc(writeFunc(c, i))
 	// 添加广播 通知除了自己的其他在线用户
 	ctx.BindBroadcastFunc(func(data any) error {
 		if bytes, err := common.InUseCodec.Marshal(data); err != nil {
@@ -113,9 +99,35 @@ func (i *ImServer) OnTraffic(c gnet.Conn) (action gnet.Action) {
 	return
 }
 
+func writeFunc(c gnet.Conn, i *ImServer) func(data any) error {
+	return func(data any) error {
+		log.Debugf("send back to client %s data %+v", c.RemoteAddr(), data)
+		if bytes, err := common.InUseCodec.Marshal(data); err != nil {
+			return err
+		} else {
+			if packageData, err := i.packer.Pack(bytes); err != nil {
+				return err
+			} else {
+				n, err := c.Write(packageData)
+				if err != nil {
+					return err
+				}
+				if n != len(packageData) {
+					return fmt.Errorf("data not send enough, send len %d", n)
+				}
+			}
+		}
+		return nil
+	}
+}
+
 func (i *ImServer) OnTick() (delay time.Duration, action gnet.Action) {
-	//TODO implement me
-	panic("implement me")
+	for _, conn := range i.connMap {
+		ctx := chat.Background()
+		ctx.BindWriteFunc(writeFunc(conn, i))
+		i.hb.CheckConn(ctx, conn)
+	}
+	return time.Second, gnet.None
 }
 
 // BuiltinEventEngine is a built-in implementation of EventHandler which sets up each method with a default implementation,

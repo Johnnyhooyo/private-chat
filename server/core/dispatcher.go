@@ -24,6 +24,7 @@ type defaultDispatcher struct {
 }
 
 func (d *defaultDispatcher) Dispatch(ctx *chat.Context, data []byte) {
+	log.Debugf("receive msg:%s", string(data))
 	routeSize := binary.BigEndian.Uint32(data[:4])
 	route := string(data[4 : 4+routeSize])
 	if handler, ok := d.router[route]; ok {
@@ -38,7 +39,6 @@ func (d *defaultDispatcher) Dispatch(ctx *chat.Context, data []byte) {
 		err := handler.Handle(ctx, req)
 		if err != nil {
 			log.Errorf("handler err is %s", err.Error())
-			return
 		}
 	} else {
 		log.Warnf("unsupported route %s", route)
