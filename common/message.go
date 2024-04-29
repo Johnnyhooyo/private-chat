@@ -6,6 +6,8 @@ import (
 	"os"
 )
 
+var System = &UserInfo{Name: "System"}
+
 type UserInfo struct {
 	Ip   string `json:"ip,omitempty"`
 	Name string `json:"name,omitempty"`
@@ -13,6 +15,7 @@ type UserInfo struct {
 
 type Message struct {
 	Route      route.Type        `json:"route,omitempty"`
+	Group      string            `json:"group,omitempty"`
 	From       *UserInfo         `json:"from,omitempty"`
 	To         *UserInfo         `json:"to,omitempty"`
 	Body       any               `json:"body,omitempty"` // 如果有图片之类的 用[pic:(.*?)] 格式填充，然后去attachFile中按index读取

@@ -57,6 +57,8 @@ func (c *Client) HandleMsg(msg *common.Message) error {
 				log.Debugf("send loggedin singnal into chan %+v", c.request[route.LogIn])
 				c.request[route.LogIn] <- true
 				fmt.Println("u r logged in.")
+			} else {
+				log.Infof("login error:%s", err.Error())
 			}
 		}
 	case route.LogOut:

@@ -24,6 +24,10 @@ func (l *ChatHandler) Handle(ctx *chat.Context, req any) error {
 	}
 	toUser, ok := getGround().userPool[msg.To.Name]
 	if !ok {
+		if group, ok := getGround().gruops[msg.To.Name]; ok {
+			group.ReceiveMsg(msg)
+			return nil
+		}
 		log.Errorf("user %s is logout, send fail", msg.To)
 		err := ctx.Write(common.Message{Route: route.Chat, From: &common.UserInfo{Name: "System"}, Body: fmt.Sprintf("user %s is logout, send fail", msg.To.Name)})
 		return err

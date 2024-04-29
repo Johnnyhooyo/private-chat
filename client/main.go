@@ -9,7 +9,7 @@ import (
 
 // 使用命令行输入来进行交互
 func main() {
-	startup := `welcome to private-chat, u can say anything u want~`
+	startup := `welcome to private-chat, u can say whatever u want~`
 	fmt.Println(startup)
 
 	for {

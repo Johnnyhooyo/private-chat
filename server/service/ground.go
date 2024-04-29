@@ -6,6 +6,7 @@ import (
 )
 
 type UserGround struct {
+	gruops        map[string]*Group
 	userPool      map[string]*common.UserInfo
 	userWriteBack map[string]func(data any) error
 }
